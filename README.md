@@ -6,15 +6,17 @@ A Trello-style collaboration app built on [Run402](https://run402.com).
 [![CodeQL](https://github.com/kychee-com/krello/actions/workflows/codeql.yml/badge.svg)](https://github.com/kychee-com/krello/actions/workflows/codeql.yml)
 [![Lighthouse](https://github.com/kychee-com/krello/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/kychee-com/krello/actions/workflows/lighthouse.yml)
 
-**Live demo:** [krello.run402.com](https://krello.run402.com)
+<a href="https://krello.run402.com"><img src="docs/screenshot.png" alt="Krello board view" width="100%"></a>
+
+**Try it live:** [krello.run402.com](https://krello.run402.com)
 
 ## Fork it
 
-Paste this into your coding agent:
-
-```
-Fork krello.run402.com using run402.com/llms.txt (curl it)
-```
+> [!TIP]
+> Paste this into your coding agent (Claude Code, Cursor, etc.):
+> ```
+> Fork krello.run402.com using run402.com/llms.txt (curl it)
+> ```
 
 ## Features
 
