@@ -60,11 +60,10 @@ Hosted as a static asset on run402.com. No dynamic rendering needed.
 The prompt the human copies into their agent:
 
 ```
-Read https://run402.com/llms.txt, then fork the published app at
-https://krello.run402.com into https://johns-krello.run402.com on Run402.
+Fork krello.run402.com using run402.com/llms.txt (curl it)
 ```
 
-This is the same format the fork badge overlay already uses. The agent reads llms.txt, discovers the fork API (`POST /v1/fork/:tier`), calls it with the version_id and subdomain, and handles any required secrets or post-deploy actions.
+Short, imperative, agent-friendly. The agent curls llms.txt, discovers the fork API (`POST /v1/fork/:tier`), calls it with the version_id and subdomain, and handles any required secrets or post-deploy actions.
 
 ---
 

@@ -10,13 +10,11 @@ A Trello-style collaboration app built on [Run402](https://run402.com).
 
 ## Fork it
 
-Get your own Krello in 30 seconds. Pick a subdomain and paste this into your coding agent (Claude Code, Cursor, Windsurf, etc.):
+Paste this into your coding agent:
 
 ```
-Read https://run402.com/llms.txt, then fork the published app at https://krello.run402.com into https://my-krello.run402.com on Run402.
+Fork krello.run402.com using run402.com/llms.txt (curl it)
 ```
-
-Replace `my-krello` with any available subdomain. Costs $0.10 in testnet USDC.
 
 ## Features
 
