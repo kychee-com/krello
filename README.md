@@ -2,7 +2,7 @@
 
 A Trello-style collaboration app built on [Run402](https://run402.com).
 
-[![Format](https://github.com/kychee-com/krello/actions/workflows/format.yml/badge.svg)](https://github.com/kychee-com/krello/actions/workflows/format.yml)
+[![Tests](https://github.com/kychee-com/krello/actions/workflows/test.yml/badge.svg)](https://github.com/kychee-com/krello/actions/workflows/test.yml)
 [![CodeQL](https://github.com/kychee-com/krello/actions/workflows/codeql.yml/badge.svg)](https://github.com/kychee-com/krello/actions/workflows/codeql.yml)
 [![Lighthouse](https://github.com/kychee-com/krello/actions/workflows/lighthouse.yml/badge.svg)](https://github.com/kychee-com/krello/actions/workflows/lighthouse.yml)
 

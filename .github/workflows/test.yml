@@ -1,12 +1,16 @@
-name: Format
-on: [pull_request]
+name: Tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-  prettier:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx prettier@latest --check "**/*.{js,css,html,sql,md}"
+      - run: node --test test.js
