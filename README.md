@@ -25,7 +25,7 @@ A Trello-style collaboration app built on [Run402](https://run402.com).
 - Rich cards: labels, assignees, checklists, comments, due dates, priorities, estimates, link attachments
 - Board templates (blank, sprint, roadmap, studio)
 - Board duplication and JSON export
-- Email/password auth via Run402
+- Email/password and Google OAuth sign-in via Run402
 - Responsive, no-build static SPA
 
 ## Project structure
@@ -33,7 +33,7 @@ A Trello-style collaboration app built on [Run402](https://run402.com).
 ```
 schema.sql     Postgres schema with RLS policies
 function.js    Run402 function (board lifecycle, invites, roles)
-deploy.ts      Deployment script for Run402
+deploy.ts      CLI-based deployment (requires `run402` CLI)
 site/
   index.html   SPA entrypoint
   app.js       Application logic

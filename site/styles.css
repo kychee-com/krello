@@ -768,6 +768,45 @@ select:focus {
   color: var(--muted);
 }
 
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 14px;
+  background: white;
+  border: 1px solid rgba(31, 36, 48, 0.16);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.google-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(31, 36, 48, 0.1);
+}
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 2px 0;
+}
+
+.or-divider::before,
+.or-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
 .divider {
   height: 1px;
   background: var(--line);

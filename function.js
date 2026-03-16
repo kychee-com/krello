@@ -863,7 +863,7 @@ async function ensureProfile(user, requestedName) {
   const rows = await db.from("profiles").select("*").eq("id", user.id).limit(1);
   const existing = rows[0];
   const requested = sanitizeOptionalText(requestedName, 48);
-  const nextName = requested || inferDisplayName(user.email);
+  const nextName = requested || sanitizeOptionalText(user.display_name, 48) || inferDisplayName(user.email);
   const tone = "ember";
 
   if (!existing) {

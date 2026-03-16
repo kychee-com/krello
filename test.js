@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import { strict as assert } from "node:assert";
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 
 // ---------------------------------------------------------------------------
 // Re-create the pure utility functions from function.js so they can be tested
@@ -325,5 +325,179 @@ describe("unique", () => {
 
   it("returns empty array for empty input", () => {
     assert.deepEqual(unique([]), []);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Google OAuth / social login integration
+// ---------------------------------------------------------------------------
+
+describe("social login", () => {
+  const appSrc = readFileSync("site/app.js", "utf-8");
+
+  it("includes PKCE verifier generation", () => {
+    assert.ok(appSrc.includes("generateCodeVerifier"), "missing generateCodeVerifier");
+  });
+
+  it("includes PKCE challenge generation", () => {
+    assert.ok(appSrc.includes("generateCodeChallenge"), "missing generateCodeChallenge");
+  });
+
+  it("stores PKCE verifier in sessionStorage", () => {
+    assert.ok(appSrc.includes("sessionStorage.setItem(PKCE_KEY"), "PKCE verifier not stored in sessionStorage");
+  });
+
+  it("cleans up PKCE verifier after use", () => {
+    assert.ok(appSrc.includes("sessionStorage.removeItem(PKCE_KEY"), "PKCE verifier not cleaned up");
+  });
+
+  it("calls the correct OAuth start endpoint", () => {
+    assert.ok(appSrc.includes("/auth/v1/oauth/google/start"), "missing OAuth start endpoint");
+  });
+
+  it("exchanges code with authorization_code grant type", () => {
+    assert.ok(appSrc.includes("grant_type=authorization_code"), "missing authorization_code grant");
+  });
+
+  it("sends code_challenge_method S256", () => {
+    assert.ok(appSrc.includes('code_challenge_method: "S256"'), "missing S256 challenge method");
+  });
+
+  it("extracts OAuth callback code from hash fragment", () => {
+    assert.ok(appSrc.includes("extractOAuthCallback"), "missing extractOAuthCallback");
+    assert.ok(appSrc.includes("[#&]code=([^&]+)"), "missing hash code extraction regex");
+  });
+
+  it("renders a Google sign-in button", () => {
+    assert.ok(appSrc.includes('data-action="google-login"'), "missing Google login button");
+    assert.ok(appSrc.includes("Continue with Google"), "missing button label");
+  });
+
+  it("handles google-login click action", () => {
+    assert.ok(appSrc.includes('"google-login"'), "missing google-login action handler");
+    assert.ok(appSrc.includes("loginWithGoogle"), "missing loginWithGoogle call");
+  });
+
+  it("clears hash after extracting OAuth code", () => {
+    assert.ok(appSrc.includes("history.replaceState"), "OAuth callback does not clean up hash");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Deploy script (CLI-based)
+// ---------------------------------------------------------------------------
+
+describe("deploy", () => {
+  const deploySrc = readFileSync("deploy.ts", "utf-8");
+
+  it("deploy.ts exists and is non-empty", () => {
+    assert.ok(deploySrc.length > 100, "deploy.ts is too short");
+  });
+
+  it("uses run402 CLI instead of raw API calls", () => {
+    assert.ok(deploySrc.includes('execFileSync("run402"'), "should call run402 CLI");
+    assert.ok(!deploySrc.includes("x402Client"), "should not use x402Client");
+    assert.ok(!deploySrc.includes("wrapFetchWithPayment"), "should not use wrapFetchWithPayment");
+    assert.ok(!deploySrc.includes("privateKeyToAccount"), "should not use viem");
+    assert.ok(!deploySrc.includes('from "dotenv"'), "should not use dotenv");
+  });
+
+  it("uses CLI for project provisioning", () => {
+    assert.ok(deploySrc.includes('"deploy", "--manifest"'), "should use run402 deploy --manifest");
+  });
+
+  it("uses CLI for schema migration", () => {
+    assert.ok(deploySrc.includes('"projects", "sql"'), "should use run402 projects sql");
+  });
+
+  it("uses CLI for function deployment", () => {
+    assert.ok(deploySrc.includes('"functions", "deploy"'), "should use run402 functions deploy");
+  });
+
+  it("uses CLI for secrets", () => {
+    assert.ok(deploySrc.includes('"secrets", "set"'), "should use run402 secrets set");
+  });
+
+  it("uses CLI for site deployment", () => {
+    assert.ok(deploySrc.includes('"sites", "deploy"'), "should use run402 sites deploy");
+  });
+
+  it("uses CLI for publishing", () => {
+    assert.ok(deploySrc.includes('"apps", "publish"'), "should use run402 apps publish");
+  });
+
+  it("injects apikey into index.html", () => {
+    assert.ok(deploySrc.includes('apikey: "",'), "should replace apikey placeholder");
+  });
+
+  it("cleans up temp manifest files", () => {
+    assert.ok(deploySrc.includes("unlinkSync"), "should clean up temp files");
+  });
+
+  it("supports existing project reuse via env vars", () => {
+    assert.ok(deploySrc.includes("KRELLO_PROJECT_ID"), "should support KRELLO_PROJECT_ID");
+    assert.ok(deploySrc.includes("KRELLO_ANON_KEY"), "should support KRELLO_ANON_KEY");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// OAuth profile support in function.js
+// ---------------------------------------------------------------------------
+
+describe("OAuth profile support", () => {
+  const fnSrc = readFileSync("function.js", "utf-8");
+
+  it("uses OAuth display_name from user object", () => {
+    assert.ok(fnSrc.includes("user.display_name"), "ensureProfile should check user.display_name");
+  });
+
+  it("falls back to email inference when no display_name", () => {
+    assert.ok(fnSrc.includes("inferDisplayName(user.email)"), "should fall back to inferDisplayName");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// CSS styles for social login
+// ---------------------------------------------------------------------------
+
+describe("social login styles", () => {
+  const css = readFileSync("site/styles.css", "utf-8");
+
+  it("has Google button styles", () => {
+    assert.ok(css.includes(".google-btn"), "missing .google-btn class");
+  });
+
+  it("has or-divider styles", () => {
+    assert.ok(css.includes(".or-divider"), "missing .or-divider class");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Documentation accuracy
+// ---------------------------------------------------------------------------
+
+describe("documentation", () => {
+  const readme = readFileSync("README.md", "utf-8");
+  const forker = readFileSync("docs/forker.md", "utf-8");
+
+  it("README mentions Google OAuth", () => {
+    assert.ok(readme.includes("Google OAuth"), "README should mention Google OAuth");
+  });
+
+  it("README references CLI-based deployment", () => {
+    assert.ok(readme.includes("CLI-based deployment"), "README should reference CLI deployment");
+  });
+
+  it("forker doc references run402 CLI", () => {
+    assert.ok(forker.includes("run402 deploy"), "forker should reference run402 deploy");
+    assert.ok(forker.includes("run402 apps fork"), "forker should reference run402 apps fork");
+  });
+
+  it("forker doc uses current fork API path", () => {
+    assert.ok(forker.includes("POST /fork/v1"), "forker should use /fork/v1 path");
+  });
+
+  it("forker doc references Google OAuth endpoint", () => {
+    assert.ok(forker.includes("/oauth/google/start"), "forker should reference OAuth endpoint");
   });
 });

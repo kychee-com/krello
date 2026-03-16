@@ -2,6 +2,7 @@ const CONFIG = window.__KRELLO_CONFIG__ || {};
 const APP = document.getElementById("app");
 const SESSION_KEY = "krello.session";
 const INVITE_KEY = "krello.pendingInvite";
+const PKCE_KEY = "krello.pkce_verifier";
 const THEMES = ["sunrise", "cobalt", "gallery", "aurora", "ember", "harbor"];
 const ACCENTS = ["ember", "gold", "rose", "moss", "cobalt", "sand", "mist"];
 const TEMPLATES = [
@@ -74,6 +75,26 @@ async function bootstrap() {
   captureInviteTokenFromUrl();
   state.loading = true;
   render();
+
+  const oauth = extractOAuthCallback();
+  if (oauth) {
+    try {
+      const response = await authRequest("/auth/v1/token?grant_type=authorization_code", {
+        method: "POST",
+        body: { code: oauth.code, code_verifier: oauth.verifier },
+      });
+      state.session = response;
+      writeSession(response);
+      await initializeSession();
+      return;
+    } catch (error) {
+      console.error(error);
+      showToast(error.message || "Google sign-in failed.");
+      state.loading = false;
+      render();
+      return;
+    }
+  }
 
   if (!state.session) {
     state.loading = false;
@@ -262,6 +283,11 @@ function renderLanding() {
         </section>
         <aside class="auth-panel">
           <div class="panel">
+            <button class="google-btn" data-action="google-login">
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59a14.5 14.5 0 0 1 0-9.18l-7.98-6.19a24.01 24.01 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              Continue with Google
+            </button>
+            <div class="or-divider">or</div>
             <div class="inline-actions">
               <button class="btn ${authMode() === "login" ? "primary" : "ghost"}" data-action="show-login">Sign in</button>
               <button class="btn ${authMode() === "signup" ? "primary" : "ghost"}" data-action="show-signup">Create account</button>
@@ -1158,6 +1184,10 @@ function handleClick(event) {
   if (!trigger) return;
   const action = trigger.dataset.action;
 
+  if (action === "google-login") {
+    loginWithGoogle();
+    return;
+  }
   if (action === "show-login") {
     state.ui.modal = null;
     render();
@@ -1705,6 +1735,52 @@ async function signup(email, password, displayName) {
       await saveProfile({ display_name: displayName, bio: "", avatar_tone: state.profile?.avatar_tone || "ember" });
     }
   });
+}
+
+async function loginWithGoogle() {
+  await withBusy("Connecting to Google", async () => {
+    const verifier = generateCodeVerifier();
+    const challenge = await generateCodeChallenge(verifier);
+    sessionStorage.setItem(PKCE_KEY, verifier);
+    const response = await authRequest("/auth/v1/oauth/google/start", {
+      method: "POST",
+      body: {
+        redirect_url: `${location.origin}/`,
+        mode: "redirect",
+        code_challenge: challenge,
+        code_challenge_method: "S256",
+      },
+    });
+    location.href = response.authorization_url;
+  });
+}
+
+function generateCodeVerifier() {
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return btoa(String.fromCharCode(...array))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+async function generateCodeChallenge(verifier) {
+  const data = new TextEncoder().encode(verifier);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return btoa(String.fromCharCode(...new Uint8Array(digest)))
+    .replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function extractOAuthCallback() {
+  const hash = location.hash;
+  const codeMatch = hash.match(/[#&]code=([^&]+)/);
+  if (!codeMatch) return null;
+
+  const code = decodeURIComponent(codeMatch[1]);
+  const verifier = sessionStorage.getItem(PKCE_KEY);
+  sessionStorage.removeItem(PKCE_KEY);
+  history.replaceState(null, "", location.pathname + location.search);
+
+  if (!verifier) return null;
+  return { code, verifier };
 }
 
 function logout() {

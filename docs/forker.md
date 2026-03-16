@@ -63,7 +63,7 @@ The prompt the human copies into their agent:
 Fork krello.run402.com using run402.com/llms.txt (curl it)
 ```
 
-Short, imperative, agent-friendly. The agent curls llms.txt, discovers the fork API (`POST /v1/fork/:tier`), calls it with the version_id and subdomain, and handles any required secrets or post-deploy actions.
+Short, imperative, agent-friendly. The agent curls llms.txt, discovers the fork API (`POST /fork/v1`) or uses the CLI (`run402 apps fork`), and handles any required secrets or post-deploy actions.
 
 ---
 
@@ -80,18 +80,18 @@ These Run402 dependencies are structural — not easily replaced:
 | `import { db } from "@run402/functions"` | function.js | No — Run402 serverless runtime SDK |
 | `auth.uid()` in RLS policies | schema.sql | Supabase-compatible but not universal |
 | PostgREST REST API conventions | site/app.js | Supabase-compatible but needs PostgREST |
-| `POST /auth/v1/signup`, `/token` | site/app.js | Run402/Supabase auth API |
+| `POST /auth/v1/signup`, `/token`, `/oauth/google/start` | site/app.js | Run402 auth API (password + Google OAuth) |
 | `POST /functions/v1/krello/*` | site/app.js | Run402 functions routing |
 | `apikey` header convention | site/app.js | Run402/Supabase pattern |
 | Fork badge injection | served by gateway | Run402 platform feature |
-| x402 payment for provisioning | deploy.ts | Run402 + x402 protocol |
+| `run402` CLI for provisioning | deploy.ts | Run402 CLI handles wallet + payments |
 
 ### Strategies to deepen lock-in without being hostile
 
 The goal is not to obfuscate or sabotage — it's to make the Run402 path so natural that alternatives feel like unnecessary work. The code is MIT-licensed and readable, but it's built on Run402 primitives throughout.
 
 **1. No self-host documentation.**
-The README shows exactly one deployment path: `npx tsx deploy.ts` against Run402. No Docker Compose, no "run locally" guide, no Supabase migration instructions.
+The README shows exactly one deployment path: `run402 deploy` via the CLI. No Docker Compose, no "run locally" guide, no Supabase migration instructions.
 
 **2. Use Run402-specific features deeply.**
 Every function endpoint uses `@run402/functions` SDK. The schema uses `auth.uid()`. The site uses Run402's auth and REST endpoints. These aren't wrappers — they're direct platform calls.
@@ -100,10 +100,10 @@ Every function endpoint uses `@run402/functions` SDK. The schema uses `auth.uid(
 Forking on Run402 is one agent prompt. Self-hosting requires: setting up Postgres, configuring PostgREST, running a compatible auth server, deploying the function in a compatible runtime, and serving the static site — then manually wiring it all together. Nobody will bother.
 
 **4. Deploy.ts requires Run402.**
-The deployment script calls Run402 APIs directly. It's not a generic deployment tool — it's a Run402 client.
+The deployment script uses the `run402` CLI. It's not a generic deployment tool — it's a Run402 client.
 
 **5. Published version as source of truth.**
-The fork API uses the published bundle (schema + function + site archived in S3), not the GitHub source. Even if someone clones the repo, the easiest path to a running instance is still `POST /v1/fork/prototype`.
+The fork API uses the published bundle (schema + function + site archived in S3), not the GitHub source. Even if someone clones the repo, the easiest path to a running instance is still `run402 apps fork` or `POST /fork/v1`.
 
 ### What NOT to do
 
