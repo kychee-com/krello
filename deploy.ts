@@ -28,6 +28,22 @@ function withTempFile<T>(name: string, data: string, fn: (path: string) => T): T
   }
 }
 
+function buildManifest(anonKey: string, subdomain?: string) {
+  const manifest: Record<string, unknown> = {
+    name: "krello",
+    migrations: readFileSync(join(rootDir, "schema.sql"), "utf-8"),
+    functions: [{
+      name: "krello",
+      code: readFileSync(join(rootDir, "function.js"), "utf-8"),
+      config: { timeout: 30, memory: 256 },
+    }],
+    secrets: [{ key: "KRELLO_APP_URL", value: APP_URL }],
+    site: loadSiteFiles(anonKey),
+  };
+  if (subdomain) manifest.subdomain = subdomain;
+  return manifest;
+}
+
 function main() {
   console.log("=== Krello Deploy ===\n");
 
@@ -35,31 +51,15 @@ function main() {
   let anonKey = EXISTING_ANON_KEY;
 
   if (projectId && anonKey) {
-    console.log(`1) Reusing project: ${projectId}\n`);
-
-    console.log("2) Applying schema...");
-    cli("projects", "sql", projectId, readFileSync(join(rootDir, "schema.sql"), "utf-8"));
-    console.log("   Schema ready");
-
-    console.log("\n3) Setting secrets...");
-    cli("secrets", "set", projectId, "KRELLO_APP_URL", APP_URL);
-    console.log("   KRELLO_APP_URL set");
-
-    console.log("\n4) Deploying function...");
-    cli("functions", "deploy", projectId, "krello",
-      "--code", join(rootDir, "function.js"),
-      "--timeout", "30", "--memory", "256");
-    console.log("   Function deployed");
-
-    console.log("\n5) Deploying site...");
-    const siteManifest = JSON.stringify({ files: loadSiteFiles(anonKey) });
-    withTempFile(".deploy-site.json", siteManifest, (path) => {
-      cli("sites", "deploy", "--name", "krello", "--manifest", path, "--project", projectId);
+    console.log(`1) Redeploying project: ${projectId}\n`);
+    const manifest = buildManifest(anonKey);
+    const result = withTempFile(".deploy-manifest.json", JSON.stringify(manifest), (path) => {
+      return cliJson("deploy", "--manifest", path);
     });
-    console.log("   Site deployed");
+    console.log(`   Site: ${result.site_url || result.subdomain_url || APP_URL}`);
   } else {
-    console.log("1) Deploying full stack...");
-    const manifest = {
+    console.log("1) Provisioning project...");
+    const bootstrapManifest = {
       name: "krello",
       migrations: readFileSync(join(rootDir, "schema.sql"), "utf-8"),
       functions: [{
@@ -68,10 +68,9 @@ function main() {
         config: { timeout: 30, memory: 256 },
       }],
       secrets: [{ key: "KRELLO_APP_URL", value: APP_URL }],
-      subdomain: "krello",
     };
 
-    const result = withTempFile(".deploy-manifest.json", JSON.stringify(manifest), (path) => {
+    const result = withTempFile(".deploy-manifest.json", JSON.stringify(bootstrapManifest), (path) => {
       return cliJson("deploy", "--manifest", path);
     });
 
@@ -79,15 +78,15 @@ function main() {
     anonKey = result.anon_key;
     console.log(`   Project: ${projectId}`);
 
-    console.log("\n2) Deploying site with credentials...");
-    const siteManifest = JSON.stringify({ files: loadSiteFiles(anonKey) });
-    withTempFile(".deploy-site.json", siteManifest, (path) => {
-      cli("sites", "deploy", "--name", "krello", "--manifest", path, "--project", projectId);
+    console.log("\n2) Redeploying with site and subdomain...");
+    const fullManifest = buildManifest(anonKey, "krello");
+    withTempFile(".deploy-full.json", JSON.stringify(fullManifest), (path) => {
+      const redeployResult = cliJson("deploy", "--manifest", path);
+      console.log(`   Site: ${redeployResult.site_url || redeployResult.subdomain_url || APP_URL}`);
     });
-    console.log("   Site deployed");
   }
 
-  console.log("\n6) Publishing forkable version...");
+  console.log("\n3) Publishing forkable version...");
   cli("apps", "publish", projectId,
     "--description", "Beautiful Trello-style collaboration app for run402 with multi-user boards, invite links, rich cards, and export/duplicate flows.",
     "--tags", "kanban,boards,collaboration,auth,starter,trello,run402",

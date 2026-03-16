@@ -406,20 +406,12 @@ describe("deploy", () => {
     assert.ok(deploySrc.includes('"deploy", "--manifest"'), "should use run402 deploy --manifest");
   });
 
-  it("uses CLI for schema migration", () => {
-    assert.ok(deploySrc.includes('"projects", "sql"'), "should use run402 projects sql");
-  });
-
-  it("uses CLI for function deployment", () => {
-    assert.ok(deploySrc.includes('"functions", "deploy"'), "should use run402 functions deploy");
-  });
-
-  it("uses CLI for secrets", () => {
-    assert.ok(deploySrc.includes('"secrets", "set"'), "should use run402 secrets set");
-  });
-
-  it("uses CLI for site deployment", () => {
-    assert.ok(deploySrc.includes('"sites", "deploy"'), "should use run402 sites deploy");
+  it("builds manifest with schema, functions, secrets, and site", () => {
+    assert.ok(deploySrc.includes("buildManifest"), "should use buildManifest helper");
+    assert.ok(deploySrc.includes("migrations"), "manifest should include migrations");
+    assert.ok(deploySrc.includes("functions"), "manifest should include functions");
+    assert.ok(deploySrc.includes("secrets"), "manifest should include secrets");
+    assert.ok(deploySrc.includes("subdomain"), "manifest should include subdomain");
   });
 
   it("uses CLI for publishing", () => {
